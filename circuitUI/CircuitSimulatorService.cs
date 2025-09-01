@@ -39,8 +39,9 @@ namespace wpfUI
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern bool RunACAnalysis(IntPtr circuit, string sourceName, double startFreq, double stopFreq, int numPoints, string sweepType);
         
+
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern int RunPhaseAnalysis(IntPtr circuit, string sourceName, double baseFreq, double startPhase, double stopPhase, int numPoints);
+        private static extern int RunPhaseSweepAnalysis(IntPtr circuit, string sourceName, double baseFreq, double startPhase, double stopPhase, int numPoints);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern double GetNodeVoltage(IntPtr circuit, string nodeName);
@@ -84,7 +85,7 @@ namespace wpfUI
         public bool RunDCAnalysis() => RunDCAnalysis(circuitHandle);
         public bool RunTransientAnalysis(double stepTime, double stopTime) => RunTransientAnalysis(circuitHandle, stepTime, stopTime);
         public bool RunACAnalysis(string sourceName, double startFreq, double stopFreq, int numPoints, string sweepType = "Linear") => RunACAnalysis(circuitHandle, sourceName, startFreq, stopFreq, numPoints, sweepType);
-        public int RunPhaseAnalysis(string sourceName, double baseFreq, double startPhase, double stopPhase, int numPoints) => RunPhaseAnalysis(circuitHandle, sourceName, baseFreq, startPhase, stopPhase, numPoints);
+        public int RunPhaseSweepAnalysis(string sourceName, double baseFreq, double startPhase, double stopPhase, int numPoints) => RunPhaseSweepAnalysis(circuitHandle, sourceName, baseFreq, startPhase, stopPhase, numPoints);
         public double GetNodeVoltage(string nodeName) => GetNodeVoltage(circuitHandle, nodeName);
 
         public string[] GetNodeNames()

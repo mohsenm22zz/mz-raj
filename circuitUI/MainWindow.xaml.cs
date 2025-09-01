@@ -460,12 +460,23 @@ namespace wpfUI
                             break;
                             
                         case SimulationParameters.AnalysisType.PhaseSweep:
-                            if (string.IsNullOrEmpty(acSource)) {
+                            string phaseSource = netlistCommands.FirstOrDefault(c => c.StartsWith("ACV"))?.Split(' ')[1] ?? "";
+                            if (string.IsNullOrEmpty(phaseSource))
+                            {
                                 MessageBox.Show("Phase Sweep requires an ACV component in the circuit.", "Simulation Error");
                                 return;
                             }
-                            //success = simulator.RunPhaseSweepAnalysis(acSource, _simulationParameters.BaseFrequency, _simulationParameters.StartPhase, _simulationParameters.StopPhase, _simulationParameters.NumberOfPoints);
-                            if (success) {
+                            // Fix: RunPhaseSweepAnalysis returns an int, not a bool
+                            int result = simulator.RunPhaseSweepAnalysis(phaseSource, _simulationParameters.BaseFrequency, _simulationParameters.StartPhase, _simulationParameters.StopPhase, _simulationParameters.NumberOfPoints);
+                            success = result > 0; // Consider success if result > 0
+                            if (success)
+                            {
+                                itemsToPlot = _probedItems.Any() ? _probedItems.Where(p => !p.StartsWith("I(")).ToArray() : simulator.GetNodeNames();
+                                if (!itemsToPlot.Any())
+                                {
+                                     MessageBox.Show("Please probe at least one node to plot for Phase analysis.", "Plot Error");
+                                     return;
+                                }
                                 plotWindow.LoadPhaseData(simulator, itemsToPlot);
                                 plotWindow.Show();
                             }

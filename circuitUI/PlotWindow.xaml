@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="Scope" Height="500" Width="800"
-        Background="#2D2D30">
+        Title="Simulation Plot" Height="450" Width="800">
     <Grid>
-        <ScottPlot:WpfPlot x:Name="WpfPlot1"/>
+        <!-- The WpfPlot control from the ScottPlot 5 library -->
+        <ScottPlot:WpfPlot Name="WpfPlot1"/>
     </Grid>
 </Window>

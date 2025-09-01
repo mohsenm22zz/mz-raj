@@ -15,8 +15,8 @@ cmake --build . --config Release
 
 REM Copy the DLL to the main directory for the C# application
 if exist bin\Release\CircuitSimulator.dll (
-    copy bin\Release\CircuitSimulator.dll ..
-    echo CircuitSimulator.dll copied to main directory
+    copy bin\Release\CircuitSimulator.dll ..\circuitUI\
+    echo CircuitSimulator.dll copied to circuitUI directory
 ) else (
     echo Warning: CircuitSimulator.dll not found
 )

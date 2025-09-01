@@ -1,8 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using ScottPlot;
+using ScottPlot; // Required for AxisScale enum in ScottPlot 5
 
 namespace wpfUI
 {
@@ -13,113 +12,103 @@ namespace wpfUI
             InitializeComponent();
         }
 
-        public void PlotTransientData(string[] nodeNames, Dictionary<string, Tuple<double[], double[]>> data)
+        public void LoadTransientData(CircuitSimulatorService simulator, string[] itemsToPlot)
         {
             WpfPlot1.Plot.Clear();
-            
-            foreach (var nodeName in nodeNames)
+            bool hasData = false;
+
+            if (itemsToPlot != null && itemsToPlot.Any())
             {
-                if (data.ContainsKey(nodeName) && data[nodeName] != null)
+                foreach (var item in itemsToPlot)
                 {
-                    var (timePoints, voltages) = data[nodeName];
-                    var scatter = WpfPlot1.Plot.Add.Scatter(timePoints, voltages);
-                    scatter.LegendText = nodeName;
+                    if (item.StartsWith("I(")) continue; // Skip currents for now
+
+                    Tuple<double[], double[]> history = simulator.GetNodeVoltageHistory(item);
+                    if (history?.Item1 != null && history.Item1.Length > 1)
+                    {
+                        // Use Add.Signal for transient, which is efficient for evenly spaced time data
+                        var sig = WpfPlot1.Plot.Add.Signal(history.Item2);
+                        sig.Label = $"V({item})";
+                        hasData = true;
+                    }
                 }
             }
             
             WpfPlot1.Plot.Title("Transient Analysis Results");
             WpfPlot1.Plot.XLabel("Time (s)");
             WpfPlot1.Plot.YLabel("Voltage (V)");
-            
-            if (nodeNames.Any())
-                WpfPlot1.Plot.ShowLegend();
-                
-            WpfPlot1.Refresh();
-        }
-        
-        public void PlotACData(string[] nodeNames, Dictionary<string, Tuple<double[], double[]>> data)
-        {
-            WpfPlot1.Plot.Clear();
-            
-            foreach (var nodeName in nodeNames)
+            if (hasData)
             {
-                if (data.ContainsKey(nodeName) && data[nodeName] != null)
-                {
-                    var (frequencies, magnitudes) = data[nodeName];
-                    var scatter = WpfPlot1.Plot.Add.Scatter(frequencies, magnitudes);
-                    scatter.LegendText = nodeName;
-                }
+                WpfPlot1.Plot.ShowLegend();
             }
             
+            WpfPlot1.Refresh();
+        }
+
+        public void LoadACData(CircuitSimulatorService simulator, string[] nodesToPlot)
+        {
+            WpfPlot1.Plot.Clear();
+            bool hasData = false;
+
+            if (nodesToPlot != null && nodesToPlot.Any())
+            {
+                foreach (var nodeName in nodesToPlot)
+                {
+                    if (nodeName.StartsWith("I(")) continue;
+
+                    Tuple<double[], double[]> history = simulator.GetNodeSweepHistory(nodeName);
+                    if (history?.Item1 != null && history.Item1.Length > 0)
+                    {
+                        var scatter = WpfPlot1.Plot.Add.Scatter(history.Item1, history.Item2);
+                        scatter.Label = $"V({nodeName})";
+                        hasData = true;
+                    }
+                }
+            }
+
             WpfPlot1.Plot.Title("AC Sweep Results");
             WpfPlot1.Plot.XLabel("Frequency (Hz)");
             WpfPlot1.Plot.YLabel("Magnitude (V)");
             
-            // Fix: Using ScottPlot 5 API to set log scale for X axis
-            WpfPlot1.Plot.Axes.AutoScale();
-
-            if (nodeNames.Any())
+            if (hasData)
+            {
                 WpfPlot1.Plot.ShowLegend();
-                
+            }
+
             WpfPlot1.Refresh();
         }
-        
-        public void PlotPhaseData(string[] nodeNames, Dictionary<string, Tuple<double[], double[]>> data)
+
+        public void LoadPhaseData(CircuitSimulatorService simulator, string[] nodesToPlot)
         {
             WpfPlot1.Plot.Clear();
+            bool hasData = false;
             
-            foreach (var nodeName in nodeNames)
+            if (nodesToPlot != null && nodesToPlot.Any())
             {
-                if (data.ContainsKey(nodeName) && data[nodeName] != null)
+                foreach (var nodeName in nodesToPlot)
                 {
-                    var (phases, magnitudes) = data[nodeName];
-                    var scatter = WpfPlot1.Plot.Add.Scatter(phases, magnitudes);
-                    scatter.LegendText = nodeName;
+                    if (nodeName.StartsWith("I(")) continue;
+                    
+                    Tuple<double[], double[]> history = simulator.GetNodePhaseSweepHistory(nodeName);
+                    if (history?.Item1 != null && history.Item1.Length > 0)
+                    {
+                        var scatter = WpfPlot1.Plot.Add.Scatter(history.Item1, history.Item2);
+                        scatter.Label = $"V({nodeName})";
+                        hasData = true;
+                    }
                 }
             }
-            
+
             WpfPlot1.Plot.Title("Phase Sweep Results");
             WpfPlot1.Plot.XLabel("Phase (degrees)");
             WpfPlot1.Plot.YLabel("Magnitude (V)");
-            
-            if (nodeNames.Any())
+            if (hasData)
+            {
                 WpfPlot1.Plot.ShowLegend();
-                
+            }
+
             WpfPlot1.Refresh();
-        }
-        
-        // Add missing methods that are called from MainWindow
-        public void LoadTransientData(CircuitSimulatorService simulator, string[] nodeNames)
-        {
-            var data = new Dictionary<string, Tuple<double[], double[]>>();
-            foreach (var nodeName in nodeNames)
-            {
-                var history = simulator.GetNodeVoltageHistory(nodeName);
-                data[nodeName] = history;
-            }
-            PlotTransientData(nodeNames, data);
-        }
-        
-        public void LoadACData(CircuitSimulatorService simulator, string[] nodeNames)
-        {
-            var data = new Dictionary<string, Tuple<double[], double[]>>();
-            foreach (var nodeName in nodeNames)
-            {
-                var history = simulator.GetNodeSweepHistory(nodeName);
-                data[nodeName] = history;
-            }
-            PlotACData(nodeNames, data);
-        }
-        
-        public void LoadPhaseData(CircuitSimulatorService simulator, string[] nodeNames)
-        {
-            var data = new Dictionary<string, Tuple<double[], double[]>>();
-            foreach (var nodeName in nodeNames)
-            {
-                var history = simulator.GetNodePhaseSweepHistory(nodeName);
-                data[nodeName] = history;
-            }
-            PlotPhaseData(nodeNames, data);
         }
     }
 }
+

@@ -10,16 +10,21 @@ This directory contains the C++ core of the circuit simulator that is used by th
 
 ### Building on Windows
 
-1. Run the build script:
+1. Run the release build script:
    ```
    build.bat
    ```
 
-   This will:
+   Or run the debug build script:
+   ```
+   build_debug.bat
+   ```
+
+   These will:
    - Create a `build` directory
    - Generate Visual Studio project files
-   - Build the project in Release configuration
-   - Copy the resulting `CircuitSimulator.dll` to the main directory
+   - Build the project in Release or Debug configuration
+   - Copy the resulting `CircuitSimulator.dll` to the circuitUI directory for the C# application
 
 ### Building manually with CMake
 
@@ -40,10 +45,20 @@ This directory contains the C++ core of the circuit simulator that is used by th
    ```
    cmake --build . --config Release
    ```
+   
+   Or for debug build:
+   ```
+   cmake --build . --config Debug
+   ```
 
 4. Copy the resulting DLL:
    ```
-   copy bin\Release\CircuitSimulator.dll ..
+   copy bin\Release\CircuitSimulator.dll ..\circuitUI\
+   ```
+   
+   Or for debug:
+   ```
+   copy bin\Debug\CircuitSimulator.dll ..\circuitUI\
    ```
 
 ### Project Structure
@@ -52,7 +67,7 @@ This directory contains the C++ core of the circuit simulator that is used by th
 - `src/` - Source files
 - `CMakeLists.txt` - CMake build configuration
 - `build/` - Build directory (created during build process)
-- `CircuitSimulator.dll` - The compiled DLL used by the C# application
+- `circuitUI/CircuitSimulator.dll` - The compiled DLL used by the C# application
 
 ## Components
 

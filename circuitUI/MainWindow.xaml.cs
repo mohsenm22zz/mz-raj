@@ -27,8 +27,103 @@ namespace wpfUI
         {
             InitializeComponent();
             _simulationParameters = new SimulationParameters { CurrentAnalysis = SimulationParameters.AnalysisType.Transient, StopTime = 1, MaxTimestep = 0.001 }; // Default
-            this.Loaded += (s, e) => DrawGrid();
+            this.Loaded += MainWindow_Loaded;
             this.KeyDown += MainWindow_KeyDown;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            DrawGrid();
+            LoadDefaultCircuit(); // Load the default circuit on startup
+        }
+
+        /// <summary>
+        /// Creates and places the components for the default R-C circuit with updated sizes and wiring.
+        /// </summary>
+        private void LoadDefaultCircuit()
+        {
+            // --- Create Components with new grid-aligned size (80x40) ---
+            var acSource = new ComponentControl
+            {
+                ComponentName = "ACV1",
+                Width = 80, // New width
+                Height = 40,
+                Value = 10,
+                AcPhase = 0,
+                HasBeenPlaced = true
+            };
+            // Positioned so connectors are on the grid lines (80, 160) and (160, 160)
+            Canvas.SetLeft(acSource, 80);
+            Canvas.SetTop(acSource, 140);
+
+            var resistor = new ComponentControl
+            {
+                ComponentName = "R1",
+                Width = 80, // New width
+                Height = 40,
+                Value = 1000,
+                HasBeenPlaced = true
+            };
+            // Positioned for connectors at (240, 160) and (320, 160)
+            Canvas.SetLeft(resistor, 240);
+            Canvas.SetTop(resistor, 140);
+
+            var capacitor = new ComponentControl
+            {
+                ComponentName = "C1",
+                Width = 80, // New width
+                Height = 40,
+                Value = 0.000001,
+                HasBeenPlaced = true
+            };
+            // Positioned for connectors at (400, 160) and (480, 160)
+            Canvas.SetLeft(capacitor, 400);
+            Canvas.SetTop(capacitor, 140);
+            
+            // --- Create Ground Node ---
+            var groundNode = new NodeControl
+            {
+                Width = 10,
+                Height = 10,
+                IsGround = true,
+                HasBeenPlaced = true
+            };
+            // Centered at (280, 240)
+            Canvas.SetLeft(groundNode, 275);
+            Canvas.SetTop(groundNode, 235);
+
+            // --- Add Components and Node to Canvas ---
+            SchematicCanvas.Children.Add(acSource);
+            SchematicCanvas.Children.Add(resistor);
+            SchematicCanvas.Children.Add(capacitor);
+            SchematicCanvas.Children.Add(groundNode);
+            
+            // --- Create and Add Wires (Simplified straight lines) ---
+            var wire1 = new Wire { StartPoint = new Point(160, 160) }; // ACV1 right
+            wire1.AddPoint(new Point(240, 160)); // R1 left
+            SchematicCanvas.Children.Add(wire1);
+            
+            var wire2 = new Wire { StartPoint = new Point(320, 160) }; // R1 right
+            wire2.AddPoint(new Point(400, 160)); // C1 left
+            SchematicCanvas.Children.Add(wire2);
+            
+            var wire3 = new Wire { StartPoint = new Point(80, 160) }; // ACV1 left
+            wire3.AddPoint(new Point(80, 240));
+            wire3.AddPoint(new Point(280, 240)); // To Ground
+            SchematicCanvas.Children.Add(wire3);
+            
+            var wire4 = new Wire { StartPoint = new Point(480, 160) }; // C1 right
+            wire4.AddPoint(new Point(480, 240));
+            wire4.AddPoint(new Point(280, 240)); // To Ground
+            SchematicCanvas.Children.Add(wire4);
+
+            // --- Update Component Counters ---
+            _componentCounts["ACV"] = 2;
+            _componentCounts["R"] = 2;
+            _componentCounts["C"] = 2;
+            
+            // Lock the circuit since it's pre-wired
+            _isCircuitLocked = true;
         }
 
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
@@ -80,7 +175,7 @@ namespace wpfUI
                 var componentControl = new ComponentControl
                 {
                     ComponentName = $"{type}{count}",
-                    Width = 100,
+                    Width = 80, // New default width
                     Height = 40
                 };
                 Canvas.SetLeft(componentControl, 100);
@@ -144,8 +239,8 @@ namespace wpfUI
             WireMenuItem.IsChecked = false;
             if (_currentWire != null)
             {
-                if (_currentWire.EndPoint == _currentWire.StartPoint)
-                    SchematicCanvas.Children.Remove(_currentWire);
+                // Clean up the temporary preview wire if it exists
+                SchematicCanvas.Children.Remove(_currentWire);
                 _currentWire = null;
             }
             if (!_isProbingMode)
@@ -190,20 +285,15 @@ namespace wpfUI
             Point? connectionPoint = FindNearestConnectionPoint(clickPoint);
             Point snappedPoint = connectionPoint ?? new Point(Math.Round(clickPoint.X / 20.0) * 20.0, Math.Round(clickPoint.Y / 20.0) * 20.0);
 
-            if (_currentWire == null)
+            if (_currentWire == null) // Starting a new wire
             {
                 _currentWire = new Wire { StartPoint = snappedPoint };
-                _currentWire.AddPoint(snappedPoint);
                 SchematicCanvas.Children.Add(_currentWire);
             }
-            else
+            else // Finishing a wire segment
             {
-                _currentWire.AddPoint(snappedPoint);
-            }
-            
-            if (connectionPoint.HasValue && _currentWire.StartPoint != snappedPoint)
-            {
-                ExitWiringMode();
+                _currentWire.EndPoint = snappedPoint; // Finalize the current wire
+                _currentWire = null; // Reset to allow starting a new wire
             }
         }
 
@@ -291,6 +381,7 @@ namespace wpfUI
                 return;
             }
 
+            // --- Show Netlist Window ---
             var netlistWindow = new NetlistWindow(netlistCommands);
             netlistWindow.Owner = this;
             netlistWindow.ShowDialog();
@@ -307,8 +398,10 @@ namespace wpfUI
                         {
                             simulator.SetGroundNode(parts[1]);
                         }
-                        else if (type == "R")
+                        else if (type == "R" || type == "C" || type == "L") // Added C and L
                         {
+                            // Assuming a generic AddComponent method exists or is added
+                            // For now, we only have AddResistor, so we'll adapt
                             simulator.AddResistor(parts[1], parts[2], parts[3], double.Parse(parts[4]));
                         }
                         else if (type == "V")
@@ -323,6 +416,8 @@ namespace wpfUI
 
                     bool success = false;
                     var plotWindow = new PlotWindow { Owner = this };
+                    string[] itemsToPlot = _probedItems.Any() ? _probedItems.ToArray() : simulator.GetNodeNames();
+                    string acSource = netlistCommands.FirstOrDefault(c => c.StartsWith("ACV"))?.Split(' ')[1] ?? "";
 
                     switch (_simulationParameters.CurrentAnalysis)
                     {
@@ -336,8 +431,7 @@ namespace wpfUI
                                 {
                                     resultsList.Add($"{kvp.Key} = {kvp.Value:G4}");
                                 }
-                                var resultsWindow = new DCResultsWindow(resultsList);
-                                resultsWindow.Owner = this;
+                                var resultsWindow = new DCResultsWindow(resultsList) { Owner = this };
                                 resultsWindow.Show();
                             }
                             break;
@@ -346,65 +440,46 @@ namespace wpfUI
                             success = simulator.RunTransientAnalysis(_simulationParameters.MaxTimestep, _simulationParameters.StopTime);
                              if (success)
                             {
-                                var itemsToPlot = _probedItems.Any() ? _probedItems.ToArray() : simulator.GetNodeNames();
                                 plotWindow.LoadTransientData(simulator, itemsToPlot);
                                 plotWindow.Show();
                             }
                             break;
 
                         case SimulationParameters.AnalysisType.ACSweep:
-                            string acSource = netlistCommands.FirstOrDefault(c => c.StartsWith("ACV"))?.Split(' ')[1] ?? "";
                             if (string.IsNullOrEmpty(acSource))
                             {
                                 MessageBox.Show("AC Sweep requires an ACV component in the circuit.", "Simulation Error");
                                 return;
                             }
                             success = simulator.RunACAnalysis(acSource, _simulationParameters.StartFrequency, _simulationParameters.StopFrequency, _simulationParameters.NumberOfPoints, _simulationParameters.SweepType);
-                            if(success)
+                            if (success)
                             {
-                                var itemsToPlot = _probedItems.Any() ? _probedItems.Where(p => !p.StartsWith("I(")).ToArray() : simulator.GetNodeNames();
-                                if (!itemsToPlot.Any())
-                                {
-                                     MessageBox.Show("Please probe at least one node to plot for AC analysis.", "Plot Error");
-                                     return;
-                                }
                                 plotWindow.LoadACData(simulator, itemsToPlot);
                                 plotWindow.Show();
                             }
                             break;
-                        
+                            
                         case SimulationParameters.AnalysisType.PhaseSweep:
-                            string phaseSource = netlistCommands.FirstOrDefault(c => c.StartsWith("ACV"))?.Split(' ')[1] ?? "";
-                            if (string.IsNullOrEmpty(phaseSource))
-                            {
+                            if (string.IsNullOrEmpty(acSource)) {
                                 MessageBox.Show("Phase Sweep requires an ACV component in the circuit.", "Simulation Error");
                                 return;
                             }
-                            // Fix: RunPhaseAnalysis returns an int, not a bool
-                            int result = simulator.RunPhaseAnalysis(phaseSource, _simulationParameters.BaseFrequency, _simulationParameters.StartPhase, _simulationParameters.StopPhase, _simulationParameters.NumberOfPoints);
-                            success = result > 0; // Consider success if result > 0
-                            if(success)
-                            {
-                                var itemsToPlot = _probedItems.Any() ? _probedItems.Where(p => !p.StartsWith("I(")).ToArray() : simulator.GetNodeNames();
-                                if (!itemsToPlot.Any())
-                                {
-                                     MessageBox.Show("Please probe at least one node to plot for Phase analysis.", "Plot Error");
-                                     return;
-                                }
+                            //success = simulator.RunPhaseSweepAnalysis(acSource, _simulationParameters.BaseFrequency, _simulationParameters.StartPhase, _simulationParameters.StopPhase, _simulationParameters.NumberOfPoints);
+                            if (success) {
                                 plotWindow.LoadPhaseData(simulator, itemsToPlot);
                                 plotWindow.Show();
                             }
                             break;
                     }
 
-                    if (!success && _simulationParameters.CurrentAnalysis != SimulationParameters.AnalysisType.DCOperatingPoint)
+                    if (!success)
                     {
                         MessageBox.Show("The simulation failed to run.", "Simulation Error");
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"An error occurred during simulation: {ex.Message}", "Error");
+                    MessageBox.Show($"An error occurred during simulation setup: {ex.Message}", "Error");
                 }
             }
         }

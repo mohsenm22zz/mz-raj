@@ -72,3 +72,4 @@ C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\refint
 C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\circuitUI.pdb
 C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\circuitUI.genruntimeconfig.cache
 C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\ref\circuitUI.dll
+C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\circuitUI.sourcelink.json

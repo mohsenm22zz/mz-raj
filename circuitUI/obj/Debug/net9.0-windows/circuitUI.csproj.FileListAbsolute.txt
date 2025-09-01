@@ -73,3 +73,6 @@ C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\circui
 C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\circuitUI.genruntimeconfig.cache
 C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\ref\circuitUI.dll
 C:\Users\mzake\RiderProjects\circuitUI\circuitUI\obj\Debug\net9.0-windows\circuitUI.sourcelink.json
+C:\Users\mzake\RiderProjects\circuitUI\circuitUI\bin\Debug\net9.0-windows\LiveChartsCore.dll
+C:\Users\mzake\RiderProjects\circuitUI\circuitUI\bin\Debug\net9.0-windows\LiveChartsCore.SkiaSharpView.dll
+C:\Users\mzake\RiderProjects\circuitUI\circuitUI\bin\Debug\net9.0-windows\LiveChartsCore.SkiaSharpView.WPF.dll
